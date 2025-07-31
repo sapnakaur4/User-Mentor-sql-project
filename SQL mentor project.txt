@@ -1,0 +1,96 @@
+
+-- SQL Mini Project 
+-- SQL Mentor User Performance
+
+CREATE TABLE USER_SUMMISSIONS (
+ID SERIAL PRIMARY KEY ,
+USER_ID BIGINT,
+QUESTION_ID INT ,
+POINTS INT ,
+SUBMITTED_AT TIMESTAMP,
+USERNAME VARCHAR (50)
+);
+
+SELECT *  FROM USER_SUMMISSIONS;
+
+
+-- Q.1  list distint users and their stats (return user_name , total_summissions,point earn.
+-- Q.2 culate the daily average points for each user.
+-- Q.3 find the top 3 users with the most positive submissions for each day.
+--  Q.4 find the top 5 users with the highest number of incorrect submissions.alter
+-- Q.5 find the top 10 performers for each week.alter
+
+
+
+
+-- Q.1  list distint users and their stats (return user_name,total_summissions,point earn.
+
+SELECT 
+  USERNAME ,
+  COUNT(ID) AS TOTAL_SUBMISSIONS,.
+  SUM(POINTS) AS POINTS_EARNED
+FROM USER_SUMMISSIONS
+GROUP BY USERNAME
+ORDER BY 2 DESC;
+
+-- Q.2 calculate the daily average points for each user.
+
+SELECT
+-- RACT(DAY FROM SUBMITTED_AT) AS SUBMITTED_DAY,
+FORMAT(SUBMITTED_AT,'DD-MM')AS DAY,
+USERNAME,
+AVG(POINTS) AS AVG_POINTS
+FROM USER_SUMMISSIONS
+GROUP BY 1,2
+ORDER BY USERNAME;
+
+-- Q.3 find the top 3 users with the most positive submissions for each day.
+
+WITH DAILY_SUBMISSIONS
+AS 
+
+(SELECT
+-- EXTRACT(DAY FROM SUBMITTED_AT) AS DAY ,
+FORMAT(SUBMITTED_AT,'DD-MM')AS DAILY,
+USERNAME,
+SUM(CASE
+WHEN POINTS > 0 THEN 1 ELSE 0
+END) AS CORRECT_SUBMISSIONS
+FROM USER_SUMMISSIONS
+GROUP BY 1,2
+)
+SELECT
+ DAILY ,
+ USERNAME,
+ CORRECT_SUBMISSIONS,
+ DENSE_RANK() OVER (partition by DAILY ORDER BY CORRECT_SUBMISSIONS DESC) AS DS_RANK
+ FROM DAILY_SUBMISSIONS;
+
+--  Q.4 find the top 5 users with the highest number of incorrect submissions.alter
+
+SELECT
+USERNAME,
+SUM(CASE
+WHEN POINTS <0 THEN 1 ELSE 0
+END) AS INCORRECT_SUBMISSIONS
+FROM USER_SUMMISSIONS
+GROUP BY 1
+ORDER BY INCORRECT_SUBMISSIONS DESC
+LIMIT 5;
+
+-- Q.5 find the top 10 performers for each week.alter
+
+SELECT *
+FROM  
+(
+SELECT
+EXTRACT(WEEK FROM SUBMITTED_AT)AS WEEK_NO,
+USERNAME,
+SUM(POINTS) AS TOTAL_POINTS_EARNED,
+DENSE_RANK() OVER(PARTITION BY EXTRACT(WEEK FROM SUBMITTED_AT) ORDER BY SUM(POINTS) DESC) AS DE_RANK
+FROM USER_SUMMISSIONS
+GROUP BY 1 ,2
+ORDER BY WEEK_NO,TOTAL_POINTS_EARNED DESC)
+WHERE DE_RANK<=10
+
+
